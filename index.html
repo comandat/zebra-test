@@ -4,55 +4,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zebra ZQ521 PDF Printer</title>
+    <title>Zebra ZQ521 PDF Printer - Web Bluetooth</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <style>
         :root {
-            --bg-color: #0f172a;
-            --container-bg: rgba(30, 41, 59, 0.7);
-            --border-color: rgba(255, 255, 255, 0.1);
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --primary: #3b82f6;
-            --primary-hover: #2563eb;
-            --success: #10b981;
-            --danger: #ef4444;
-            --glow: 0 0 20px rgba(59, 130, 246, 0.5);
+            --bg: #0f172a;
+            --card: rgba(30, 41, 59, 0.75);
+            --border: rgba(255, 255, 255, 0.1);
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --blue: #3b82f6;
+            --blue-h: #2563eb;
+            --green: #10b981;
+            --red: #ef4444;
+            --purple: #8b5cf6;
+            --teal: #0d9488;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            margin: 0;
-            padding: 0;
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
+            background: var(--bg);
             background-image:
-                radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.15), transparent 25%),
-                radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.15), transparent 25%);
-            color: var(--text-main);
+                radial-gradient(circle at 15% 50%, rgba(59, 130, 246, .15), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(139, 92, 246, .15), transparent 25%);
+            color: var(--text);
+            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
-            overflow: hidden;
+            padding: 20px;
         }
 
-        .container {
-            width: 90%;
-            max-width: 480px;
-            background: var(--container-bg);
+        .card {
+            width: 100%;
+            max-width: 500px;
+            background: var(--card);
             backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border);
             border-radius: 24px;
             padding: 40px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            text-align: center;
-            animation: fadeIn 0.8s ease-out;
-            position: relative;
-            z-index: 10;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, .5);
+            animation: fadeUp .6s ease-out;
         }
 
-        @keyframes fadeIn {
+        @keyframes fadeUp {
             from {
                 opacity: 0;
                 transform: translateY(20px);
@@ -65,537 +68,598 @@
         }
 
         h1 {
-            font-size: 28px;
+            font-size: 26px;
             font-weight: 800;
-            margin-bottom: 8px;
             background: linear-gradient(135deg, #60a5fa, #a78bfa);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            margin-bottom: 4px;
         }
 
-        p.subtitle {
-            color: var(--text-muted);
-            font-size: 14px;
-            margin-bottom: 32px;
+        .subtitle {
+            color: var(--muted);
+            font-size: 13px;
+            margin-bottom: 20px;
         }
 
+        /* Connection banner */
+        .conn-banner {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 0, 0, .3);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
+        .conn-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            background: var(--muted);
+        }
+
+        .conn-dot.ok {
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+        }
+
+        .conn-dot.err {
+            background: var(--red);
+        }
+
+        /* Upload area */
         .upload-area {
-            border: 2px dashed var(--border-color);
+            border: 2px dashed var(--border);
             border-radius: 16px;
-            padding: 32px 16px;
+            padding: 28px 16px;
+            text-align: center;
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 24px;
+            transition: all .3s;
+            margin-bottom: 16px;
             position: relative;
         }
 
         .upload-area:hover,
-        .upload-area.dragover {
-            border-color: var(--primary);
-            background: rgba(59, 130, 246, 0.05);
+        .upload-area.over {
+            border-color: var(--blue);
+            background: rgba(59, 130, 246, .05);
         }
 
         .upload-icon {
-            font-size: 40px;
-            margin-bottom: 12px;
+            font-size: 36px;
             display: block;
+            margin-bottom: 8px;
         }
 
-        #file-input {
-            width: 0.1px;
-            height: 0.1px;
-            opacity: 0;
-            overflow: hidden;
-            position: absolute;
-            z-index: -1;
+        .upload-text {
+            font-size: 14px;
+            color: var(--muted);
         }
 
         .file-name {
             display: block;
-            margin-top: 12px;
-            font-size: 14px;
+            margin-top: 8px;
+            font-size: 13px;
             font-weight: 600;
-            color: var(--primary);
+            color: var(--blue);
             word-break: break-all;
         }
 
-        .action-btn {
-            background: var(--primary);
-            color: white;
+        #file-input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        /* Buttons */
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
             border: none;
-            padding: 16px 32px;
             border-radius: 12px;
-            font-size: 16px;
+            font-family: inherit;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            width: 100%;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: all .25s;
+            color: #fff;
+            margin-bottom: 10px;
         }
 
-        .action-btn:hover:not(:disabled) {
-            background: var(--primary-hover);
-            box-shadow: var(--glow);
+        .btn:last-child {
+            margin-bottom: 0;
+        }
+
+        .btn:hover:not(:disabled) {
             transform: translateY(-2px);
+            filter: brightness(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
-        .action-btn:active:not(:disabled) {
+        .btn:active:not(:disabled) {
             transform: translateY(0);
         }
 
-        .action-btn:disabled {
-            background: var(--border-color);
-            color: var(--text-muted);
+        .btn:disabled {
+            opacity: .45;
             cursor: not-allowed;
-            box-shadow: none;
         }
 
-        .status {
-            margin-top: 24px;
-            font-size: 14px;
-            padding: 12px;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.05);
+        .btn-blue {
+            background: var(--blue);
+        }
+
+        .btn-purple {
+            background: var(--purple);
+        }
+
+        .btn-teal {
+            background: var(--teal);
+        }
+
+        .btn-zinc {
+            background: #3f3f46;
+            border: 1px solid var(--border);
+        }
+
+        .btn-gray {
+            background: rgba(255, 255, 255, .1);
+            font-size: 13px;
+            padding: 10px;
+        }
+
+        /* Progress */
+        .progress-wrap {
+            height: 5px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 14px 0;
             display: none;
-            word-wrap: break-word;
-        }
-
-        .status.active {
-            display: block;
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        .status.success {
-            border-left: 4px solid var(--success);
-            color: var(--success);
-        }
-
-        .status.error {
-            border-left: 4px solid var(--danger);
-            color: var(--danger);
-        }
-
-        .status.info {
-            border-left: 4px solid var(--primary);
         }
 
         .progress-bar {
-            width: 100%;
-            height: 6px;
-            background-color: var(--border-color);
-            border-radius: 3px;
-            margin-top: 12px;
-            overflow: hidden;
-            display: none;
-        }
-
-        .progress-bar-fill {
             height: 100%;
-            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            background: linear-gradient(90deg, var(--blue), var(--purple));
             width: 0%;
-            transition: width 0.2s ease;
+            transition: width .2s;
         }
 
-        .custom-section {
-            margin-top: 20px;
-            text-align: left;
+        /* Status */
+        .status {
+            margin-top: 16px;
+            font-size: 13px;
+            padding: 12px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, .04);
+            display: none;
+            word-break: break-word;
         }
 
-        .custom-section label {
+        .status.show {
             display: block;
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-            font-weight: 600;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
+            animation: fadeUp .3s;
         }
 
-        .custom-section textarea {
+        .status.info {
+            border-left: 4px solid var(--blue);
+        }
+
+        .status.ok {
+            border-left: 4px solid var(--green);
+            color: var(--green);
+        }
+
+        .status.err {
+            border-left: 4px solid var(--red);
+            color: var(--red);
+        }
+
+        /* Custom command */
+        .section-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--muted);
+            font-weight: 700;
+            margin-bottom: 6px;
+            margin-top: 20px;
+            display: block;
+        }
+
+        textarea {
             width: 100%;
-            height: 120px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--border-color);
+            height: 110px;
+            background: rgba(0, 0, 0, .3);
+            border: 1px solid var(--border);
             border-radius: 10px;
-            color: var(--text-main);
+            color: var(--text);
             font-family: 'Courier New', monospace;
             font-size: 12px;
             padding: 10px;
             resize: vertical;
-            box-sizing: border-box;
-            transition: border-color 0.2s;
+            margin-bottom: 8px;
+            transition: border-color .2s;
         }
 
-        .custom-section textarea:focus {
+        textarea:focus {
             outline: none;
-            border-color: var(--primary);
+            border-color: var(--blue);
         }
 
-        #send-custom-btn {
-            margin-top: 8px;
-            background: #0f766e;
-            font-size: 14px;
+        hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 20px 0;
+        }
+
+        .uuid-box {
+            background: rgba(0, 0, 0, .4);
+            border: 1px solid var(--border);
+            border-radius: 8px;
             padding: 12px;
-        }
-
-        #send-custom-btn:hover:not(:disabled) {
-            background: #0d9488;
+            font-family: monospace;
+            font-size: 11px;
+            color: #d8b4fe;
+            word-break: break-all;
+            margin-bottom: 15px;
+            display: none;
         }
     </style>
-    <!-- PDF.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-    <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-    </script>
 </head>
 
 <body>
-
-    <div class="container">
+    <div class="card">
         <h1>Zebra ZQ521</h1>
-        <p class="subtitle">Printează PDF (100x150mm) via Web Bluetooth</p>
+        <p class="subtitle">Nativ Web Bluetooth — printare directă, 100% cloud</p>
 
-        <div class="upload-area" id="upload-area">
+        <!-- Connection banner -->
+        <div class="conn-banner" id="conn-banner">
+            <div class="conn-dot" id="conn-dot"></div>
+            <span id="conn-text">Deconectat.</span>
+        </div>
+
+        <button class="btn btn-zinc" id="connect-btn">🔗 Conectează Bluetooth Zebra</button>
+
+        <div id="uuid-box" class="uuid-box">
+            <!-- GATT details will appear here -->
+        </div>
+
+        <!-- PDF Upload -->
+        <div class="upload-area" id="upload-area" style="opacity: 0.5; pointer-events: none;">
             <span class="upload-icon">📄</span>
             <span class="upload-text">Apasă sau trage un PDF aici</span>
             <span class="file-name" id="file-name">Niciun fișier selectat</span>
-            <input type="file" id="file-input" accept="application/pdf" />
+            <input type="file" id="file-input" accept="application/pdf">
         </div>
 
-        <button id="print-btn" class="action-btn" disabled>Conectare și Printare</button>
+        <button class="btn btn-blue" id="print-btn" disabled>🖨️ Printează PDF</button>
 
-        <button id="test-btn" class="action-btn" style="margin-top:12px; background: #8b5cf6;">🧪 Test Print (text
-            simplu)</button>
+        <div class="progress-wrap" id="progress-wrap">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+        <div class="status" id="status"></div>
 
-        <div class="custom-section">
-            <label>Comandă ZPL / CPCL personalizată</label>
-            <textarea id="custom-cmd">^XA
-^FO50,50^A0N,60,60^FDHello Zebra^FS
+        <hr>
+
+        <span class="section-label">Comandă ZPL brută (Test)</span>
+        <textarea id="custom-cmd">^XA
+^FO50,50^A0N,60,60^FDHello Web Bluetooth!^FS
 ^XZ</textarea>
-            <button id="send-custom-btn" class="action-btn">📡 Trimite Comandă Personalizată</button>
-        </div>
-
-        <div id="progress-container" class="progress-bar">
-            <div id="progress-fill" class="progress-bar-fill"></div>
-        </div>
-
-        <div id="status-message" class="status"></div>
+        <button class="btn btn-teal" id="send-btn" disabled>📡 Trimite Comandă</button>
     </div>
 
     <script>
-        /**
-         * CPCL-based printing for Zebra ZQ521 via Web Bluetooth.
-         */
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
-        const ZEBRA_SERVICE = '38eb4a80-c570-11e3-9507-0002a5d5c51b';
-        const ZEBRA_WRITE_CHARACTERISTIC = '38eb4a82-c570-11e3-9507-0002a5d5c51b';
-        const CHUNK_SIZE = 300; // Ca în exemplul oficial Zebra
+        const $ = id => document.getElementById(id);
+        const statusEl = $('status');
+        const progressW = $('progress-wrap');
+        const progressB = $('progress-bar');
+        const printBtn = $('print-btn');
+        const connectBtn = $('connect-btn');
+        const sendBtn = $('send-btn');
+        const uploadArea = $('upload-area');
+        const connDot = $('conn-dot');
+        const connText = $('conn-text');
+        const uuidBox = $('uuid-box');
 
-        const getElement = id => document.getElementById(id);
-        const readFileAsArrayBuffer = file => new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = error => reject(error);
-            reader.readAsArrayBuffer(file);
+        const setStatus = (msg, type = 'info') => {
+            statusEl.textContent = msg;
+            statusEl.className = `status show ${type}`;
+        };
+        const setProgress = pct => {
+            progressW.style.display = 'block';
+            progressB.style.width = pct + '%';
+            if (pct >= 100) setTimeout(() => progressW.style.display = 'none', 1000);
+        };
+        const setConn = (ok, msg) => {
+            connDot.className = 'conn-dot ' + (ok ? 'ok' : 'err');
+            connText.textContent = msg;
+
+            if (ok) {
+                uploadArea.style.opacity = '1';
+                uploadArea.style.pointerEvents = 'all';
+                connectBtn.style.display = 'none';
+                sendBtn.disabled = false;
+            }
+        };
+
+        const readFileAsArrayBuffer = file => new Promise((res, rej) => {
+            const r = new FileReader();
+            r.onload = () => res(r.result);
+            r.onerror = rej;
+            r.readAsArrayBuffer(file);
         });
 
-        const UI = {
-            fileInput: getElement('file-input'),
-            uploadArea: getElement('upload-area'),
-            fileName: getElement('file-name'),
-            printBtn: getElement('print-btn'),
-            statusMsg: getElement('status-message'),
-            progressContainer: getElement('progress-container'),
-            progressFill: getElement('progress-fill'),
+        // ── Web Serial Setup (Bluetooth Classic over COM) ───────────────────────
+        let serialPort = null;
+        let serialWriter = null;
 
-            setStatus: (msg, type = 'info') => {
-                UI.statusMsg.textContent = msg;
-                UI.statusMsg.className = `status active ${type}`;
-            },
-            setProgress: (percent) => {
-                if (percent === 0) UI.progressContainer.style.display = 'block';
-                UI.progressFill.style.width = `${percent}%`;
-                if (percent === 100) setTimeout(() => UI.progressContainer.style.display = 'none', 1000);
-            },
-            setPrintReady: (isReady) => {
-                UI.printBtn.disabled = !isReady;
-            }
-        };
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-        // ============ BLUETOOTH ============
-
-        const requestBluetoothDevice = async () => {
-            return navigator.bluetooth.requestDevice({
-                acceptAllDevices: true,
-                optionalServices: [ZEBRA_SERVICE]
-            });
-        };
-
-        const connectAndGetCharacteristic = async (device) => {
-            console.log('[BLE 1/4] Conectare GATT...', device.id, device.name);
-            UI.setStatus(`Conectare la ${device.name || 'imprimantă'}...`, 'info');
-            const server = await device.gatt.connect();
-
-            console.log('[BLE 2/4] GATT OK. Serviciu:', ZEBRA_SERVICE);
-            const service = await server.getPrimaryService(ZEBRA_SERVICE);
-
-            console.log('[BLE 3/4] Serviciu OK. Caracteristică:', ZEBRA_WRITE_CHARACTERISTIC);
-            const characteristic = await service.getCharacteristic(ZEBRA_WRITE_CHARACTERISTIC);
-            console.log('[BLE 4/4] Gata!', characteristic.uuid);
-            console.log('[BLE] Proprietati caracteristica:', JSON.stringify({
-                broadcast: characteristic.properties.broadcast,
-                read: characteristic.properties.read,
-                writeWithoutResponse: characteristic.properties.writeWithoutResponse,
-                write: characteristic.properties.write,
-                notify: characteristic.properties.notify,
-                indicate: characteristic.properties.indicate,
-            }));
-            return characteristic;
-        };
-
-        // Converteste un string la ArrayBuffer via DataView (exact ca in exemplul oficial Zebra)
-        const strToArrayBuffer = (str) => {
-            const buffer = new ArrayBuffer(str.length);
-            const dataView = new DataView(buffer);
-            for (let i = 0; i < str.length; i++) {
-                dataView.setUint8(i, str.charCodeAt(i));
-            }
-            return buffer;
-        };
-
-        // Trimite un string la caracteristica BLE in chunk-uri de CHUNK_SIZE,
-        // cu un delay de 250ms intre fiecare (pattern oficial Zebra)
-        const sendStringToBLE = (characteristic, str) => {
-            return new Promise((resolve, reject) => {
-                const totalChunks = Math.ceil(str.length / CHUNK_SIZE);
-                console.log(`[TX] Trimitere ${totalChunks} pachete de ~${CHUNK_SIZE} bytes (delay 250ms intre ele)...`);
-                UI.setProgress(0);
-
-                let j = 0;
-                const promises = [];
-
-                for (let i = 0; i < str.length; i += CHUNK_SIZE) {
-                    const chunk = str.substring(i, i + CHUNK_SIZE);
-                    const buffer = strToArrayBuffer(chunk);
-                    const chunkIndex = j;
-
-                    const p = new Promise((res, rej) => {
-                        setTimeout(() => {
-                            console.log(`[TX] Pachet ${chunkIndex + 1}/${totalChunks}...`);
-                            UI.setStatus(`Trimitere date... ${Math.round(((chunkIndex + 1) / totalChunks) * 100)}%`, 'info');
-                            UI.setProgress(Math.round(((chunkIndex + 1) / totalChunks) * 100));
-                            characteristic.writeValue(buffer).then(res).catch(rej);
-                        }, 250 * chunkIndex);
-                    });
-                    promises.push(p);
-                    j++;
+        connectBtn.addEventListener('click', async () => {
+            try {
+                if (!('serial' in navigator)) {
+                    throw new Error("Browserul tău nu suportă Web Serial API (recomandăm Chrome/Edge pe laptop).");
                 }
 
-                Promise.all(promises)
-                    .then(() => { console.log('[TX] Toate pachetele trimise.'); resolve(); })
-                    .catch(reject);
-            });
+                setStatus('Se așteaptă selecția dispozitivului...', 'info');
+                setConn(false, 'Alege port-ul Bluetooth (COM) din listă...');
+
+                // 1. Request Port (îți va arăta inclusiv porturile create de Windows Bluetooth)
+                serialPort = await navigator.serial.requestPort();
+
+                setConn(false, 'Port selectat. Se deschide conexiunea...');
+
+                // 2. Open Port (115200 bps e standard pentru Zebra pe BT Serial)
+                await serialPort.open({ baudRate: 115200 });
+
+                serialWriter = serialPort.writable.getWriter();
+
+                setConn(true, 'Conectat prin Bluetooth Clasic (Port Serial)');
+
+                uuidBox.innerHTML = `<b>Conexiune Stabilă ✔️</b><br>Imprimanta comunică fizic pe portul COM.<br>Limitări GATT ocolite definitiv!`;
+                uuidBox.style.display = 'block';
+
+                setStatus('Bluetooth conectat perfect! Poți alege un PDF și poți printa!', 'ok');
+
+                // Listener pentru deconectare accidentala de la laptop/port
+                serialPort.addEventListener('disconnect', () => {
+                    setConn(false, 'Deconectat fizic.');
+                    setStatus('Imprimanta a fost oprită sau a ieșit din raza Bluetooth.', 'err');
+                    connectBtn.style.display = 'block';
+                    uploadArea.style.opacity = '0.5';
+                    uploadArea.style.pointerEvents = 'none';
+                    printBtn.disabled = true;
+                    sendBtn.disabled = true;
+                    serialWriter = null;
+                });
+
+            } catch (err) {
+                console.error(err);
+                if (err.name === 'NotFoundError') {
+                    setConn(false, 'Anulat de tine.');
+                    setStatus('Nu ai selectat niciun port.', 'info');
+                } else {
+                    setConn(false, 'Eroare port.');
+                    setStatus(`Eroare Serial/BT: ${err.message}`, 'err');
+                }
+            }
+        });
+
+        // ── Sending via Serial Port ────────────────────────────────────────────────
+        const sendToPrinter = async (dataString) => {
+            if (!serialWriter) throw new Error("Port serial/bluetooth deconectat.");
+
+            const encoder = new TextEncoder();
+            const bytes = encoder.encode(dataString);
+
+            console.log(`[Serial BT] Se transmit ${bytes.length} bytes pe portiunea virtuala...`);
+
+            // Trimitem tot sirul ZPL odata prin bufferul portului (fara chunking-ul draconic BLE)
+            await serialWriter.write(bytes);
+            console.log('[Serial BT] Scriere buffer teminată. Datele sunt în zbor spre imprimantă!');
+
+            // Animație rapidă pt flow în UI
+            setProgress(70);
+            await sleep(200);
+            setProgress(100);
         };
 
-        // ============ CPCL GRAPHIC CONVERSION ============
+        // ── Algoritm decupare margini albe ───────────────────────────────────────────
+        const autoCropCanvas = (sourceCanvas) => {
+            const ctx = sourceCanvas.getContext('2d');
+            const w = sourceCanvas.width;
+            const h = sourceCanvas.height;
+            const pixels = ctx.getImageData(0, 0, w, h).data;
 
-        const convertCanvasToCPCL = (canvas) => {
+            let top = 0, bottom = h - 1, left = 0, right = w - 1;
+
+            const isDark = (idx) => {
+                const lum = (pixels[idx] + pixels[idx + 1] + pixels[idx + 2]) / 3;
+                return pixels[idx + 3] > 50 && lum < 240;
+            };
+
+            topSearch: for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) { if (isDark((y * w + x) * 4)) { top = y; break topSearch; } }
+            }
+            bottomSearch: for (let y = h - 1; y >= 0; y--) {
+                for (let x = 0; x < w; x++) { if (isDark((y * w + x) * 4)) { bottom = y; break bottomSearch; } }
+            }
+            leftSearch: for (let x = 0; x < w; x++) {
+                for (let y = top; y <= bottom; y++) { if (isDark((y * w + x) * 4)) { left = x; break leftSearch; } }
+            }
+            rightSearch: for (let x = w - 1; x >= 0; x--) {
+                for (let y = top; y <= bottom; y++) { if (isDark((y * w + x) * 4)) { right = x; break rightSearch; } }
+            }
+
+            if (bottom < top || right < left) return sourceCanvas;
+
+            const padding = 15;
+            top = Math.max(0, top - padding);
+            bottom = Math.min(h - 1, bottom + padding);
+            left = Math.max(0, left - padding);
+            right = Math.min(w - 1, right + padding);
+
+            const cropW = right - left;
+            const cropH = bottom - top;
+
+            const croppedCanvas = document.createElement('canvas');
+            croppedCanvas.width = cropW;
+            croppedCanvas.height = cropH;
+
+            const cropCtx = croppedCanvas.getContext('2d');
+            cropCtx.drawImage(sourceCanvas, left, top, cropW, cropH, 0, 0, cropW, cropH);
+
+            return croppedCanvas;
+        };
+
+        // ── PDF → ZPL fixat pentru 100x150mm (812 x 1218 pixeli) ───────────────
+        const convertCanvasToZPL = (canvas) => {
             const ctx = canvas.getContext('2d');
-            const width = Math.round(canvas.width);
-            const height = Math.round(canvas.height);
-            const imageData = ctx.getImageData(0, 0, width, height);
-            const pixels = imageData.data;
+            const w = canvas.width, h = canvas.height;
+            const pixels = ctx.getImageData(0, 0, w, h).data;
+            const bpr = Math.ceil(w / 8);
+            let hex = '';
 
-            const bytesPerRow = Math.ceil(width / 8);
-            let hexData = '';
-
-            for (let y = 0; y < height; y++) {
-                for (let byteCol = 0; byteCol < bytesPerRow; byteCol++) {
+            for (let y = 0; y < h; y++) {
+                for (let col = 0; col < bpr; col++) {
                     let byte = 0;
                     for (let bit = 0; bit < 8; bit++) {
-                        const pixelX = byteCol * 8 + bit;
-                        if (pixelX < width) {
-                            const i = (y * width + pixelX) * 4;
-                            const r = pixels[i];
-                            const g = pixels[i + 1];
-                            const b = pixels[i + 2];
-                            const a = pixels[i + 3];
-                            const isBlack = (a > 50) && ((r + g + b) / 3 < 180);
-                            if (isBlack) {
-                                byte |= (1 << (7 - bit));
-                            }
+                        const px = col * 8 + bit;
+                        if (px < w) {
+                            const i = (y * w + px) * 4;
+                            const lum = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
+                            if (pixels[i + 3] > 50 && lum < 180) byte |= (1 << (7 - bit));
                         }
                     }
-                    hexData += byte.toString(16).padStart(2, '0').toUpperCase();
+                    hex += byte.toString(16).padStart(2, '0').toUpperCase();
                 }
             }
 
-            // CPCL:
-            //   ! offset xdpi ydpi label_height qty
-            //   EG byte_width dot_height x y hex_data
-            //   FORM
-            //   PRINT
-            const cmd =
-                '! 0 200 200 ' + height + ' 1\r\n' +
-                'EG ' + bytesPerRow + ' ' + height + ' 0 0 ' + hexData + '\r\n' +
-                'FORM\r\n' +
-                'PRINT\r\n';
-
-            console.log(`[CPCL] EG: bytesPerRow=${bytesPerRow}, height=${height}, hexLen=${hexData.length}`);
-            console.log(`[CPCL] Total cmd length: ${cmd.length}`);
-            console.log(`[CPCL] Start: ${cmd.substring(0, 100)}`);
-            return cmd;
+            const totalBytes = bpr * h;
+            return `^XA\r\n^PW${w}\r\n^LL${h}\r\n^FO0,0^GFA,${totalBytes},${totalBytes},${bpr},${hex}^FS\r\n^XZ\r\n`;
         };
 
-        const renderPdfToCpcl = async (fileBuffer) => {
-            console.log('[PDF] Începe procesarea...');
-            const loadingTask = pdfjsLib.getDocument({ data: fileBuffer });
-            const pdf = await loadingTask.promise;
-            console.log(`[PDF] Pagini: ${pdf.numPages}`);
+        const renderPdfToZpl = async (buffer) => {
+            setStatus('Randare PDF și decupare margini albe...', 'info');
+            const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
             const page = await pdf.getPage(1);
 
-            // ZQ521: 200 DPI, ~4 inch printable width = 800 dots
-            const vpNative = page.getViewport({ scale: 1.0 });
-            const scale = 800 / vpNative.width;
-            const viewport = page.getViewport({ scale });
-            console.log(`[PDF] Canvas: ${Math.round(viewport.width)}x${Math.round(viewport.height)} (scale ${scale.toFixed(3)})`);
+            const vpNative = page.getViewport({ scale: 2.0 });
+            const sourceCanvas = document.createElement('canvas');
+            sourceCanvas.width = Math.round(vpNative.width);
+            sourceCanvas.height = Math.round(vpNative.height);
+            const sourceCtx = sourceCanvas.getContext('2d');
+            sourceCtx.fillStyle = 'white';
+            sourceCtx.fillRect(0, 0, sourceCanvas.width, sourceCanvas.height);
+            await page.render({ canvasContext: sourceCtx, viewport: vpNative }).promise;
 
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = Math.round(viewport.width);
-            canvas.height = Math.round(viewport.height);
+            // TĂIERE ZONE DE ALB INUTILE
+            const croppedCanvas = autoCropCanvas(sourceCanvas);
 
-            // White background
+            // PLASARE PE ETICHETA STANDARD ZEBRA DE 100x150mm (812x1218px)
+            const LABEL_W = 812;
+            const LABEL_H = 1218;
+
+            const finalCanvas = document.createElement('canvas');
+            finalCanvas.width = LABEL_W;
+            finalCanvas.height = LABEL_H;
+            const ctx = finalCanvas.getContext('2d');
             ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, LABEL_W, LABEL_H);
 
-            await page.render({ canvasContext: ctx, viewport }).promise;
-            console.log('[PDF] Randare completă.');
+            const scaleW = LABEL_W / croppedCanvas.width;
+            const scaleH = LABEL_H / croppedCanvas.height;
+            const finalScale = Math.min(scaleW, scaleH);
 
-            return convertCanvasToCPCL(canvas);
+            const drawW = croppedCanvas.width * finalScale;
+            const drawH = croppedCanvas.height * finalScale;
+
+            const dx = (LABEL_W - drawW) / 2;
+            const dy = (LABEL_H - drawH) / 2;
+            ctx.drawImage(croppedCanvas, dx, dy, drawW, drawH);
+
+            console.log(`[PDF] Randare completată și optimizată. Se convertește la ZPL...`);
+            return convertCanvasToZPL(finalCanvas);
         };
 
-        // ============ TEST PRINT ============
+        // ── Print PDF ────────────────────────────────────────────────────────────────
+        let currentFile = null;
 
-        const handleTestPrint = async () => {
+        const handlePrint = async () => {
+            if (!currentFile || !serialWriter) return;
             try {
-                UI.setStatus('Test Print: conectare...', 'info');
-                const device = await requestBluetoothDevice();
-                device.addEventListener('gattserverdisconnected', () => {
-                    UI.setStatus('Deconectat.', 'error');
-                });
-                const characteristic = await connectAndGetCharacteristic(device);
+                printBtn.disabled = true;
+                setProgress(0);
+                setStatus('Procesare PDF...', 'info');
 
-                // CPCL test: trimitem 3 etichete cu fonturi diferite sa vedem care merge
-                // Daca imprimanta e la 203 DPI, label de 50mm inaltime = 203*2 = 406 dots
-                const cpclTest =
-                    '! 0 203 203 406 1\r\n' +
-                    'TEXT 4 0 30 30 Test Font4-0\r\n' +
-                    'TEXT 5 0 30 100 Test Font5-0\r\n' +
-                    'TEXT 0 0 30 170 Test Font0-0\r\n' +
-                    'FORM\r\n' +
-                    'PRINT\r\n';
+                const buffer = await readFileAsArrayBuffer(currentFile);
+                setProgress(10);
 
-                console.log('[Test CPCL]', cpclTest);
-                UI.setStatus('Trimitere test CPCL (3 fonturi)...', 'info');
-                await sendStringToBLE(characteristic, cpclTest);
-                console.log('[Test] CPCL trimis.');
+                const printData = await renderPdfToZpl(buffer);
+                setProgress(30);
 
-                UI.setStatus('Test trimis! Verifică imprimanta.', 'success');
-            } catch (error) {
-                if (error.name === 'NotFoundError') {
-                    UI.setStatus('Conectare anulată.', 'info');
-                } else {
-                    console.error('[Test] Eroare:', error);
-                    UI.setStatus(`Eroare test: ${error.message}`, 'error');
-                }
-            }
-        };
+                setStatus('Trimitere prin Bluetooth Clasic COM...', 'info');
+                await sendToPrinter(printData);
 
-        // ============ MAIN PRINT ============
-
-        const handlePrint = async (file) => {
-            try {
-                UI.setPrintReady(false);
-                UI.setStatus('Conectare Bluetooth...', 'info');
-                UI.setProgress(0);
-
-                const device = await requestBluetoothDevice();
-                device.addEventListener('gattserverdisconnected', () => {
-                    UI.setStatus('Deconectat.', 'error');
-                    UI.setPrintReady(true);
-                });
-
-                const characteristic = await connectAndGetCharacteristic(device);
-
-                UI.setStatus('Procesare PDF...', 'info');
-                const buffer = await readFileAsArrayBuffer(file);
-                const cpclData = await renderPdfToCpcl(buffer);
-                UI.setStatus('Trimitere date...', 'info');
-                await sendStringToBLE(characteristic, cpclData);
-
-                UI.setStatus('Printare finalizată cu succes!', 'success');
-            } catch (error) {
-                if (error.name === 'NotFoundError') {
-                    UI.setStatus('Conectare anulată.', 'info');
-                } else {
-                    console.error(error);
-                    UI.setStatus(`Eroare: ${error.message}`, 'error');
-                }
+                setStatus('Printare finalizată cu succes! ✅', 'ok');
+            } catch (e) {
+                console.error(e);
+                setStatus(`Eroare: ${e.message}`, 'err');
             } finally {
-                UI.setPrintReady(true);
+                printBtn.disabled = !currentFile;
             }
         };
 
-        // ============ EVENT LISTENERS ============
-
-        const setupInteractions = () => {
-            let currentFile = null;
-
-            UI.uploadArea.addEventListener('click', () => UI.fileInput.click());
-            UI.uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); UI.uploadArea.classList.add('dragover'); });
-            UI.uploadArea.addEventListener('dragleave', () => { UI.uploadArea.classList.remove('dragover'); });
-            UI.uploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                UI.uploadArea.classList.remove('dragover');
-                if (e.dataTransfer.files.length > 0) handleFileSelect(e.dataTransfer.files[0]);
-            });
-            UI.fileInput.addEventListener('change', (e) => {
-                if (e.target.files.length > 0) handleFileSelect(e.target.files[0]);
-            });
-            UI.printBtn.addEventListener('click', () => { if (currentFile) handlePrint(currentFile); });
-            getElement('test-btn').addEventListener('click', handleTestPrint);
-
-            getElement('send-custom-btn').addEventListener('click', async () => {
-                const rawCmd = getElement('custom-cmd').value.trim();
-                if (!rawCmd) { UI.setStatus('Scrie o comandă ZPL sau CPCL mai întâi.', 'error'); return; }
-                try {
-                    UI.setStatus('Conectare pentru comandă personalizată...', 'info');
-                    const device = await requestBluetoothDevice();
-                    const characteristic = await connectAndGetCharacteristic(device);
-                    console.log('[Custom CMD]', rawCmd);
-                    await sendStringToBLE(characteristic, rawCmd + '\r\n');
-                    UI.setStatus('Comandă trimisă cu succes!', 'success');
-                } catch (error) {
-                    if (error.name === 'NotFoundError') { UI.setStatus('Conectare anulată.', 'info'); }
-                    else { console.error('[Custom CMD] Eroare:', error); UI.setStatus(`Eroare: ${error.message}`, 'error'); }
-                }
-            });
-
-            const handleFileSelect = (file) => {
-                if (file.type !== 'application/pdf') {
-                    UI.setStatus('Selectează un fișier PDF valid.', 'error');
-                    UI.setPrintReady(false);
-                    return;
-                }
-                currentFile = file;
-                UI.fileName.textContent = file.name;
-                UI.setPrintReady(true);
-                UI.setStatus('Fișier pregătit pentru printare.', 'info');
-            };
+        // ── Custom command ───────────────────────────────────────────────────────────
+        const handleSendCustom = async () => {
+            const cmd = $('custom-cmd').value.trim();
+            if (!cmd) { setStatus('Scrie o comandă mai întâi.', 'err'); return; }
+            if (!serialWriter) { setStatus('Connectează imprimanta pe portul COM mai întâi.', 'err'); return; }
+            try {
+                setStatus('Trimitere comandă prin Serial BT...', 'info');
+                setProgress(20);
+                await sendToPrinter(cmd + '\r\n');
+                setStatus('Comandă trimisă cu succes! ✅', 'ok');
+            } catch (e) {
+                console.error(e);
+                setStatus(`Eroare: ${e.message}`, 'err');
+            }
         };
 
-        document.addEventListener('DOMContentLoaded', setupInteractions);
+        // ── File select ──────────────────────────────────────────────────────────────
+        const handleFile = (file) => {
+            if (!file || file.type !== 'application/pdf') {
+                setStatus('Selectează un fișier PDF valid.', 'err');
+                printBtn.disabled = true;
+                return;
+            }
+            currentFile = file;
+            $('file-name').textContent = file.name;
+            printBtn.disabled = false;
+            setStatus('PDF pregătit. Apasă Printează PDF.', 'info');
+        };
+
+        $('upload-area').addEventListener('click', () => $('file-input').click());
+        $('upload-area').addEventListener('dragover', e => { e.preventDefault(); $('upload-area').classList.add('over'); });
+        $('upload-area').addEventListener('dragleave', () => $('upload-area').classList.remove('over'));
+        $('upload-area').addEventListener('drop', e => {
+            e.preventDefault(); $('upload-area').classList.remove('over');
+            if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+        });
+        $('file-input').addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+        $('print-btn').addEventListener('click', handlePrint);
+        $('send-btn').addEventListener('click', handleSendCustom);
+
     </script>
 </body>
 
