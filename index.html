@@ -326,7 +326,10 @@
             <span id="conn-text">Deconectat.</span>
         </div>
 
-        <button class="btn btn-zinc" id="connect-btn">🔗 Conectează Bluetooth Zebra</button>
+        <button class="btn btn-zinc" id="connect-serial-btn">💻 Conectează Windows (Port Serial COM)</button>
+        <button class="btn btn-zinc" id="connect-ble-btn"
+            style="margin-top: 10px; background: #9333ea; color: white; border-color: #7e22ce;">📱 Conectează Android
+            (Bluetooth BLE)</button>
 
         <div id="uuid-box" class="uuid-box">
             <!-- GATT details will appear here -->
@@ -364,7 +367,8 @@
         const progressW = $('progress-wrap');
         const progressB = $('progress-bar');
         const printBtn = $('print-btn');
-        const connectBtn = $('connect-btn');
+        const connectSerialBtn = $('connect-serial-btn');
+        const connectBleBtn = $('connect-ble-btn');
         const sendBtn = $('send-btn');
         const uploadArea = $('upload-area');
         const connDot = $('conn-dot');
@@ -387,7 +391,8 @@
             if (ok) {
                 uploadArea.style.opacity = '1';
                 uploadArea.style.pointerEvents = 'all';
-                connectBtn.style.display = 'none';
+                connectSerialBtn.style.display = 'none';
+                connectBleBtn.style.display = 'none';
                 sendBtn.disabled = false;
             }
         };
@@ -399,16 +404,16 @@
             r.readAsArrayBuffer(file);
         });
 
-        // ── Web Serial Setup (Bluetooth Classic over COM) ───────────────────────
+        // ── Web Serial Setup (Bluetooth Classic over COM) ─ Windows ────────
         let serialPort = null;
         let serialWriter = null;
 
         const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-        connectBtn.addEventListener('click', async () => {
+        connectSerialBtn.addEventListener('click', async () => {
             try {
                 if (!('serial' in navigator)) {
-                    throw new Error("Browserul tău nu suportă Web Serial API (recomandăm Chrome/Edge pe laptop).");
+                    throw new Error("Browserul tău nu suportă Web Serial. Dacă ești pe Android, folosește butonul BLE de mai jos.");
                 }
 
                 setStatus('Se așteaptă selecția dispozitivului...', 'info');
@@ -426,16 +431,17 @@
 
                 setConn(true, 'Conectat prin Bluetooth Clasic (Port Serial)');
 
-                uuidBox.innerHTML = `<b>Conexiune Stabilă ✔️</b><br>Imprimanta comunică fizic pe portul COM.<br>Limitări GATT ocolite definitiv!`;
+                uuidBox.innerHTML = `<b>Conexiune Stabilă ✔️</b><br>Imprimanta comunică fizic pe portul COM.<br>Limitări GATT ocolite pe Windows!`;
                 uuidBox.style.display = 'block';
 
-                setStatus('Bluetooth conectat perfect! Poți alege un PDF și poți printa!', 'ok');
+                setStatus('Bluetooth conectat perfect pe Windows! Poți printa.', 'ok');
 
                 // Listener pentru deconectare accidentala de la laptop/port
                 serialPort.addEventListener('disconnect', () => {
                     setConn(false, 'Deconectat fizic.');
                     setStatus('Imprimanta a fost oprită sau a ieșit din raza Bluetooth.', 'err');
-                    connectBtn.style.display = 'block';
+                    connectSerialBtn.style.display = 'block';
+                    connectBleBtn.style.display = 'block';
                     uploadArea.style.opacity = '0.5';
                     uploadArea.style.pointerEvents = 'none';
                     printBtn.disabled = true;
@@ -455,23 +461,133 @@
             }
         });
 
-        // ── Sending via Serial Port ────────────────────────────────────────────────
+        // ── Web Bluetooth Setup (GATT BLE) ─ Android ────────
+        const ZEBRA_SERVICE = '38eb4a80-c570-11e3-9507-0002a5d5c51b';
+        let bleDevice = null;
+        let bleServer = null;
+        let writeCharacteristic = null;
+
+        connectBleBtn.addEventListener('click', async () => {
+            try {
+                if (!('bluetooth' in navigator)) {
+                    throw new Error("Browserul nu suportă Web Bluetooth.");
+                }
+
+                setStatus('Se așteaptă selecția...', 'info');
+                setConn(false, 'Afișăm dispozitive Bluetooth Low Energy...');
+
+                bleDevice = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: [ZEBRA_SERVICE]
+                });
+
+                bleDevice.addEventListener('gattserverdisconnected', () => {
+                    setConn(false, 'Deconectat.');
+                    setStatus('Imprimanta BLE s-a deconectat.', 'err');
+                    connectSerialBtn.style.display = 'block';
+                    connectBleBtn.style.display = 'block';
+                    uploadArea.style.opacity = '0.5';
+                    uploadArea.style.pointerEvents = 'none';
+                    printBtn.disabled = true;
+                    sendBtn.disabled = true;
+                    writeCharacteristic = null;
+                });
+
+                setConn(false, `Conectare GATT la ${bleDevice.name}...`);
+                bleServer = await bleDevice.gatt.connect();
+
+                setConn(false, 'Se caută serviciile...');
+                const service = await bleServer.getPrimaryService(ZEBRA_SERVICE);
+
+                setConn(false, 'Zebra găsit. Căutăm portul...');
+                const characteristics = await service.getCharacteristics();
+
+                let detectedHTML = `<b>Android (BLE) Conectat:</b><br>Serviciu: ${service.uuid}<br>`;
+
+                for (let char of characteristics) {
+                    if (!writeCharacteristic && (char.properties.write || char.properties.writeWithoutResponse)) {
+                        writeCharacteristic = char;
+                    }
+                }
+
+                uuidBox.innerHTML = detectedHTML + `👉 Char: ${writeCharacteristic.uuid}`;
+                uuidBox.style.display = 'block';
+
+                if (!writeCharacteristic) throw new Error("Nu acceptă comenzi.");
+
+                setConn(true, `Conectat Android: BLE (${bleDevice.name})`);
+                setStatus('Gata! Poți printa cu succes din telefon!', 'ok');
+
+            } catch (err) {
+                console.error(err);
+                if (err.name === 'NotFoundError') {
+                    setConn(false, 'Anulat de utilizator.');
+                    setStatus('Nu ai selectat imprimanta BLE.', 'info');
+                } else {
+                    setConn(false, 'Eroare BLE.');
+                    setStatus(`Eroare Android BT: ${err.message}`, 'err');
+                }
+            }
+        });
+
+        // ── Trimitere Date: Ruter Hibrid Serial / BLE ──────────────────────────────
         const sendToPrinter = async (dataString) => {
-            if (!serialWriter) throw new Error("Port serial/bluetooth deconectat.");
+            if (!serialWriter && !writeCharacteristic) throw new Error("Port serial/bluetooth deconectat.");
 
             const encoder = new TextEncoder();
             const bytes = encoder.encode(dataString);
 
-            console.log(`[Serial BT] Se transmit ${bytes.length} bytes pe portiunea virtuala...`);
+            // Varianta 1: Windows (Serial) - Bulk Transfer
+            if (serialWriter) {
+                console.log(`[Serial BT] Se transmit ${bytes.length} bytes pe portiunea virtuala...`);
+                await serialWriter.write(bytes);
+                console.log('[Serial BT] Scriere buffer teminată.');
+                setProgress(70);
+                await sleep(200);
+                setProgress(100);
+                return;
+            }
 
-            // Trimitem tot sirul ZPL odata prin bufferul portului (fara chunking-ul draconic BLE)
-            await serialWriter.write(bytes);
-            console.log('[Serial BT] Scriere buffer teminată. Datele sunt în zbor spre imprimantă!');
+            // Varianta 2: Android (BLE) - Chunk Transfer
+            if (writeCharacteristic) {
+                const CHUNK_SIZE = 100;
+                const CHUNK_DELAY = 100;
+                const totalChunks = Math.ceil(bytes.length / CHUNK_SIZE);
+                console.log(`[BLE Android] Transmit ${totalChunks} bufere de ${CHUNK_SIZE}b, Delay: ${CHUNK_DELAY}ms`);
 
-            // Animație rapidă pt flow în UI
-            setProgress(70);
-            await sleep(200);
-            setProgress(100);
+                let useWriteWithoutResponse = writeCharacteristic.properties.writeWithoutResponse;
+
+                for (let i = 0; i < totalChunks; i++) {
+                    const chunk = bytes.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+
+                    try {
+                        if (useWriteWithoutResponse) {
+                            await writeCharacteristic.writeValueWithoutResponse(chunk);
+                        } else {
+                            await writeCharacteristic.writeValue(chunk);
+                        }
+                    } catch (err) {
+                        try {
+                            if (useWriteWithoutResponse && writeCharacteristic.properties.write) {
+                                useWriteWithoutResponse = false;
+                                await writeCharacteristic.writeValue(chunk);
+                            } else if (!useWriteWithoutResponse && writeCharacteristic.properties.writeWithoutResponse) {
+                                useWriteWithoutResponse = true;
+                                await writeCharacteristic.writeValueWithoutResponse(chunk);
+                            } else {
+                                throw err;
+                            }
+                        } catch (fatalErr) {
+                            throw new Error(`Conexiune BLE blocată (${fatalErr.message}).`);
+                        }
+                    }
+
+                    await sleep(CHUNK_DELAY);
+                    if (i % 5 === 0 || i === totalChunks - 1) {
+                        setProgress(Math.round(((i + 1) / totalChunks) * 100));
+                    }
+                }
+            }
         };
 
         // ── Algoritm decupare margini albe ───────────────────────────────────────────
@@ -596,7 +712,7 @@
         let currentFile = null;
 
         const handlePrint = async () => {
-            if (!currentFile || !serialWriter) return;
+            if (!currentFile || (!serialWriter && !writeCharacteristic)) return;
             try {
                 printBtn.disabled = true;
                 setProgress(0);
@@ -608,7 +724,7 @@
                 const printData = await renderPdfToZpl(buffer);
                 setProgress(30);
 
-                setStatus('Trimitere prin Bluetooth Clasic COM...', 'info');
+                setStatus('Trimitere către Imprimantă...', 'info');
                 await sendToPrinter(printData);
 
                 setStatus('Printare finalizată cu succes! ✅', 'ok');
@@ -624,9 +740,9 @@
         const handleSendCustom = async () => {
             const cmd = $('custom-cmd').value.trim();
             if (!cmd) { setStatus('Scrie o comandă mai întâi.', 'err'); return; }
-            if (!serialWriter) { setStatus('Connectează imprimanta pe portul COM mai întâi.', 'err'); return; }
+            if (!serialWriter && !writeCharacteristic) { setStatus('Connectează imprimanta mai întâi.', 'err'); return; }
             try {
-                setStatus('Trimitere comandă prin Serial BT...', 'info');
+                setStatus('Trimitere comandă bruta...', 'info');
                 setProgress(20);
                 await sendToPrinter(cmd + '\r\n');
                 setStatus('Comandă trimisă cu succes! ✅', 'ok');
