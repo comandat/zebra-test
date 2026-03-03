@@ -550,8 +550,9 @@
 
             // Varianta 2: Android (BLE) - Chunk Transfer
             if (writeCharacteristic) {
-                const CHUNK_SIZE = 100;
-                const CHUNK_DELAY = 100;
+                // Setări Turbo pentru Android: telefonul negociază automat MTU mare și suportă flood BLE mult mai abil decât Windows.
+                const CHUNK_SIZE = 512;
+                const CHUNK_DELAY = 15;
                 const totalChunks = Math.ceil(bytes.length / CHUNK_SIZE);
                 console.log(`[BLE Android] Transmit ${totalChunks} bufere de ${CHUNK_SIZE}b, Delay: ${CHUNK_DELAY}ms`);
 
