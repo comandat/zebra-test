@@ -548,45 +548,21 @@
                 return;
             }
 
-            // Varianta 2: Android (BLE) - Chunk Transfer
+            // Varianta 2: Android (BLE) - Bulk Transfer
             if (writeCharacteristic) {
-                // Setări Turbo pentru Android: telefonul negociază automat MTU mare și suportă flood BLE mult mai abil decât Windows.
-                const CHUNK_SIZE = 512;
-                const CHUNK_DELAY = 15;
-                const totalChunks = Math.ceil(bytes.length / CHUNK_SIZE);
-                console.log(`[BLE Android] Transmit ${totalChunks} bufere de ${CHUNK_SIZE}b, Delay: ${CHUNK_DELAY}ms`);
+                console.log(`[BLE Android] Încercăm o trimitere bulk de ${bytes.length} bytes!`);
 
-                let useWriteWithoutResponse = writeCharacteristic.properties.writeWithoutResponse;
-
-                for (let i = 0; i < totalChunks; i++) {
-                    const chunk = bytes.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-
-                    try {
-                        if (useWriteWithoutResponse) {
-                            await writeCharacteristic.writeValueWithoutResponse(chunk);
-                        } else {
-                            await writeCharacteristic.writeValue(chunk);
-                        }
-                    } catch (err) {
-                        try {
-                            if (useWriteWithoutResponse && writeCharacteristic.properties.write) {
-                                useWriteWithoutResponse = false;
-                                await writeCharacteristic.writeValue(chunk);
-                            } else if (!useWriteWithoutResponse && writeCharacteristic.properties.writeWithoutResponse) {
-                                useWriteWithoutResponse = true;
-                                await writeCharacteristic.writeValueWithoutResponse(chunk);
-                            } else {
-                                throw err;
-                            }
-                        } catch (fatalErr) {
-                            throw new Error(`Conexiune BLE blocată (${fatalErr.message}).`);
-                        }
+                try {
+                    if (writeCharacteristic.properties.writeWithoutResponse) {
+                        await writeCharacteristic.writeValueWithoutResponse(bytes);
+                    } else {
+                        await writeCharacteristic.writeValue(bytes);
                     }
-
-                    await sleep(CHUNK_DELAY);
-                    if (i % 5 === 0 || i === totalChunks - 1) {
-                        setProgress(Math.round(((i + 1) / totalChunks) * 100));
-                    }
+                    console.log('[BLE Android] Scriere bulk terminată.');
+                    setProgress(100);
+                } catch (err) {
+                    console.error('[BLE Android] Eroare la trimitere bulk:', err);
+                    throw new Error(`Imprimanta BLE nu suportă bulk atât de mare (${err.message}). Folosiți chunking!`);
                 }
             }
         };
