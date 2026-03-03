@@ -551,7 +551,7 @@
             // Varianta 2: Android (BLE) - Chunk Transfer
             if (writeCharacteristic) {
                 // Setări Turbo pentru Android: telefonul negociază automat MTU mare
-                const CHUNK_SIZE = 1024;
+                const CHUNK_SIZE = 512;
                 const CHUNK_DELAY = 15;
                 const totalChunks = Math.ceil(bytes.length / CHUNK_SIZE);
                 console.log(`[BLE Android] Transmit ${totalChunks} bufere de ${CHUNK_SIZE}b, Delay: ${CHUNK_DELAY}ms`);
@@ -640,6 +640,35 @@
         };
 
         // ── PDF → ZPL fixat pentru 100x150mm (812 x 1218 pixeli) ───────────────
+        const compressZPLHex = (hex) => {
+            let compressed = '';
+            let count = 1;
+
+            for (let i = 1; i <= hex.length; i++) {
+                if (hex[i] === hex[i - 1] && count < 419) {
+                    count++;
+                } else {
+                    if (count > 2) { // Merită comprimat doar dacă sunt >2 caractere
+                        let zCount = Math.floor(count / 400); // câte 'z' pt grupe de 400
+                        let remainder = count % 400;
+                        let tens = Math.floor(remainder / 20); // 'g' = 20
+                        let ones = remainder % 20; // 'G' = 1
+
+                        for (let z = 0; z < zCount; z++) compressed += 'z';
+                        if (tens > 0) compressed += String.fromCharCode(103 + tens - 1); // 'g' - 'y'
+                        if (ones > 0) compressed += String.fromCharCode(71 + ones - 1);  // 'G' - 'Y'
+
+                        compressed += hex[i - 1]; // punem litera sau nr efectiv
+                    } else {
+                        // repetăm dacă nu merită comprimat
+                        for (let t = 0; t < count; t++) compressed += hex[i - 1];
+                    }
+                    count = 1;
+                }
+            }
+            return compressed;
+        };
+
         const convertCanvasToZPL = (canvas) => {
             const ctx = canvas.getContext('2d');
             const w = canvas.width, h = canvas.height;
@@ -663,7 +692,11 @@
             }
 
             const totalBytes = bpr * h;
-            return `^XA\r\n^PW${w}\r\n^LL${h}\r\n^FO0,0^GFA,${totalBytes},${totalBytes},${bpr},${hex}^FS\r\n^XZ\r\n`;
+            const compressedHex = compressZPLHex(hex);
+
+            console.log(`[ZPL Compress] Dimensiune Brută: ${hex.length} -> Comprimată la: ${compressedHex.length}`);
+
+            return `^XA\r\n^PW${w}\r\n^LL${h}\r\n^FO0,0^GFA,${totalBytes},${totalBytes},${bpr},${compressedHex}^FS\r\n^XZ\r\n`;
         };
 
         const renderPdfToZpl = async (buffer) => {
