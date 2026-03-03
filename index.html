@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ro">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zebra ZQ521 PDF Printer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --container-bg: rgba(30, 41, 59, 0.7);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --success: #10b981;
+            --danger: #ef4444;
+            --glow: 0 0 20px rgba(59, 130, 246, 0.5);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image:
+                radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.15), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.15), transparent 25%);
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 480px;
+            background: var(--container-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            animation: fadeIn 0.8s ease-out;
+            position: relative;
+            z-index: 10;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 32px;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 16px;
+            padding: 32px 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: var(--primary);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        #file-input {
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            position: absolute;
+            z-index: -1;
+        }
+
+        .file-name {
+            display: block;
+            margin-top: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary);
+            word-break: break-all;
+        }
+
+        .action-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .action-btn:hover:not(:disabled) {
+            background: var(--primary-hover);
+            box-shadow: var(--glow);
+            transform: translateY(-2px);
+        }
+
+        .action-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .action-btn:disabled {
+            background: var(--border-color);
+            color: var(--text-muted);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .status {
+            margin-top: 24px;
+            font-size: 14px;
+            padding: 12px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            display: none;
+            word-wrap: break-word;
+        }
+
+        .status.active {
+            display: block;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .status.success {
+            border-left: 4px solid var(--success);
+            color: var(--success);
+        }
+
+        .status.error {
+            border-left: 4px solid var(--danger);
+            color: var(--danger);
+        }
+
+        .status.info {
+            border-left: 4px solid var(--primary);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background-color: var(--border-color);
+            border-radius: 3px;
+            margin-top: 12px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            width: 0%;
+            transition: width 0.2s ease;
+        }
+
+        .custom-section {
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .custom-section label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .custom-section textarea {
+            width: 100%;
+            height: 120px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-main);
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            padding: 10px;
+            resize: vertical;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        .custom-section textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        #send-custom-btn {
+            margin-top: 8px;
+            background: #0f766e;
+            font-size: 14px;
+            padding: 12px;
+        }
+
+        #send-custom-btn:hover:not(:disabled) {
+            background: #0d9488;
+        }
+    </style>
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    </script>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Zebra ZQ521</h1>
+        <p class="subtitle">Printează PDF (100x150mm) via Web Bluetooth</p>
+
+        <div class="upload-area" id="upload-area">
+            <span class="upload-icon">📄</span>
+            <span class="upload-text">Apasă sau trage un PDF aici</span>
+            <span class="file-name" id="file-name">Niciun fișier selectat</span>
+            <input type="file" id="file-input" accept="application/pdf" />
+        </div>
+
+        <button id="print-btn" class="action-btn" disabled>Conectare și Printare</button>
+
+        <button id="test-btn" class="action-btn" style="margin-top:12px; background: #8b5cf6;">🧪 Test Print (text
+            simplu)</button>
+
+        <div class="custom-section">
+            <label>Comandă ZPL / CPCL personalizată</label>
+            <textarea id="custom-cmd">^XA
+^FO50,50^A0N,60,60^FDHello Zebra^FS
+^XZ</textarea>
+            <button id="send-custom-btn" class="action-btn">📡 Trimite Comandă Personalizată</button>
+        </div>
+
+        <div id="progress-container" class="progress-bar">
+            <div id="progress-fill" class="progress-bar-fill"></div>
+        </div>
+
+        <div id="status-message" class="status"></div>
+    </div>
+
+    <script>
+        /**
+         * CPCL-based printing for Zebra ZQ521 via Web Bluetooth.
+         */
+
+        const ZEBRA_SERVICE = '38eb4a80-c570-11e3-9507-0002a5d5c51b';
+        const ZEBRA_WRITE_CHARACTERISTIC = '38eb4a82-c570-11e3-9507-0002a5d5c51b';
+        const CHUNK_SIZE = 300; // Ca în exemplul oficial Zebra
+
+        const getElement = id => document.getElementById(id);
+        const readFileAsArrayBuffer = file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+            reader.readAsArrayBuffer(file);
+        });
+
+        const UI = {
+            fileInput: getElement('file-input'),
+            uploadArea: getElement('upload-area'),
+            fileName: getElement('file-name'),
+            printBtn: getElement('print-btn'),
+            statusMsg: getElement('status-message'),
+            progressContainer: getElement('progress-container'),
+            progressFill: getElement('progress-fill'),
+
+            setStatus: (msg, type = 'info') => {
+                UI.statusMsg.textContent = msg;
+                UI.statusMsg.className = `status active ${type}`;
+            },
+            setProgress: (percent) => {
+                if (percent === 0) UI.progressContainer.style.display = 'block';
+                UI.progressFill.style.width = `${percent}%`;
+                if (percent === 100) setTimeout(() => UI.progressContainer.style.display = 'none', 1000);
+            },
+            setPrintReady: (isReady) => {
+                UI.printBtn.disabled = !isReady;
+            }
+        };
+
+        // ============ BLUETOOTH ============
+
+        const requestBluetoothDevice = async () => {
+            return navigator.bluetooth.requestDevice({
+                acceptAllDevices: true,
+                optionalServices: [ZEBRA_SERVICE]
+            });
+        };
+
+        const connectAndGetCharacteristic = async (device) => {
+            console.log('[BLE 1/4] Conectare GATT...', device.id, device.name);
+            UI.setStatus(`Conectare la ${device.name || 'imprimantă'}...`, 'info');
+            const server = await device.gatt.connect();
+
+            console.log('[BLE 2/4] GATT OK. Serviciu:', ZEBRA_SERVICE);
+            const service = await server.getPrimaryService(ZEBRA_SERVICE);
+
+            console.log('[BLE 3/4] Serviciu OK. Caracteristică:', ZEBRA_WRITE_CHARACTERISTIC);
+            const characteristic = await service.getCharacteristic(ZEBRA_WRITE_CHARACTERISTIC);
+            console.log('[BLE 4/4] Gata!', characteristic.uuid);
+            console.log('[BLE] Proprietati caracteristica:', JSON.stringify({
+                broadcast: characteristic.properties.broadcast,
+                read: characteristic.properties.read,
+                writeWithoutResponse: characteristic.properties.writeWithoutResponse,
+                write: characteristic.properties.write,
+                notify: characteristic.properties.notify,
+                indicate: characteristic.properties.indicate,
+            }));
+            return characteristic;
+        };
+
+        // Converteste un string la ArrayBuffer via DataView (exact ca in exemplul oficial Zebra)
+        const strToArrayBuffer = (str) => {
+            const buffer = new ArrayBuffer(str.length);
+            const dataView = new DataView(buffer);
+            for (let i = 0; i < str.length; i++) {
+                dataView.setUint8(i, str.charCodeAt(i));
+            }
+            return buffer;
+        };
+
+        // Trimite un string la caracteristica BLE in chunk-uri de CHUNK_SIZE,
+        // cu un delay de 250ms intre fiecare (pattern oficial Zebra)
+        const sendStringToBLE = (characteristic, str) => {
+            return new Promise((resolve, reject) => {
+                const totalChunks = Math.ceil(str.length / CHUNK_SIZE);
+                console.log(`[TX] Trimitere ${totalChunks} pachete de ~${CHUNK_SIZE} bytes (delay 250ms intre ele)...`);
+                UI.setProgress(0);
+
+                let j = 0;
+                const promises = [];
+
+                for (let i = 0; i < str.length; i += CHUNK_SIZE) {
+                    const chunk = str.substring(i, i + CHUNK_SIZE);
+                    const buffer = strToArrayBuffer(chunk);
+                    const chunkIndex = j;
+
+                    const p = new Promise((res, rej) => {
+                        setTimeout(() => {
+                            console.log(`[TX] Pachet ${chunkIndex + 1}/${totalChunks}...`);
+                            UI.setStatus(`Trimitere date... ${Math.round(((chunkIndex + 1) / totalChunks) * 100)}%`, 'info');
+                            UI.setProgress(Math.round(((chunkIndex + 1) / totalChunks) * 100));
+                            characteristic.writeValue(buffer).then(res).catch(rej);
+                        }, 250 * chunkIndex);
+                    });
+                    promises.push(p);
+                    j++;
+                }
+
+                Promise.all(promises)
+                    .then(() => { console.log('[TX] Toate pachetele trimise.'); resolve(); })
+                    .catch(reject);
+            });
+        };
+
+        // ============ CPCL GRAPHIC CONVERSION ============
+
+        const convertCanvasToCPCL = (canvas) => {
+            const ctx = canvas.getContext('2d');
+            const width = Math.round(canvas.width);
+            const height = Math.round(canvas.height);
+            const imageData = ctx.getImageData(0, 0, width, height);
+            const pixels = imageData.data;
+
+            const bytesPerRow = Math.ceil(width / 8);
+            let hexData = '';
+
+            for (let y = 0; y < height; y++) {
+                for (let byteCol = 0; byteCol < bytesPerRow; byteCol++) {
+                    let byte = 0;
+                    for (let bit = 0; bit < 8; bit++) {
+                        const pixelX = byteCol * 8 + bit;
+                        if (pixelX < width) {
+                            const i = (y * width + pixelX) * 4;
+                            const r = pixels[i];
+                            const g = pixels[i + 1];
+                            const b = pixels[i + 2];
+                            const a = pixels[i + 3];
+                            const isBlack = (a > 50) && ((r + g + b) / 3 < 180);
+                            if (isBlack) {
+                                byte |= (1 << (7 - bit));
+                            }
+                        }
+                    }
+                    hexData += byte.toString(16).padStart(2, '0').toUpperCase();
+                }
+            }
+
+            // CPCL:
+            //   ! offset xdpi ydpi label_height qty
+            //   EG byte_width dot_height x y hex_data
+            //   FORM
+            //   PRINT
+            const cmd =
+                '! 0 200 200 ' + height + ' 1\r\n' +
+                'EG ' + bytesPerRow + ' ' + height + ' 0 0 ' + hexData + '\r\n' +
+                'FORM\r\n' +
+                'PRINT\r\n';
+
+            console.log(`[CPCL] EG: bytesPerRow=${bytesPerRow}, height=${height}, hexLen=${hexData.length}`);
+            console.log(`[CPCL] Total cmd length: ${cmd.length}`);
+            console.log(`[CPCL] Start: ${cmd.substring(0, 100)}`);
+            return cmd;
+        };
+
+        const renderPdfToCpcl = async (fileBuffer) => {
+            console.log('[PDF] Începe procesarea...');
+            const loadingTask = pdfjsLib.getDocument({ data: fileBuffer });
+            const pdf = await loadingTask.promise;
+            console.log(`[PDF] Pagini: ${pdf.numPages}`);
+            const page = await pdf.getPage(1);
+
+            // ZQ521: 200 DPI, ~4 inch printable width = 800 dots
+            const vpNative = page.getViewport({ scale: 1.0 });
+            const scale = 800 / vpNative.width;
+            const viewport = page.getViewport({ scale });
+            console.log(`[PDF] Canvas: ${Math.round(viewport.width)}x${Math.round(viewport.height)} (scale ${scale.toFixed(3)})`);
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = Math.round(viewport.width);
+            canvas.height = Math.round(viewport.height);
+
+            // White background
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            await page.render({ canvasContext: ctx, viewport }).promise;
+            console.log('[PDF] Randare completă.');
+
+            return convertCanvasToCPCL(canvas);
+        };
+
+        // ============ TEST PRINT ============
+
+        const handleTestPrint = async () => {
+            try {
+                UI.setStatus('Test Print: conectare...', 'info');
+                const device = await requestBluetoothDevice();
+                device.addEventListener('gattserverdisconnected', () => {
+                    UI.setStatus('Deconectat.', 'error');
+                });
+                const characteristic = await connectAndGetCharacteristic(device);
+
+                // CPCL test: trimitem 3 etichete cu fonturi diferite sa vedem care merge
+                // Daca imprimanta e la 203 DPI, label de 50mm inaltime = 203*2 = 406 dots
+                const cpclTest =
+                    '! 0 203 203 406 1\r\n' +
+                    'TEXT 4 0 30 30 Test Font4-0\r\n' +
+                    'TEXT 5 0 30 100 Test Font5-0\r\n' +
+                    'TEXT 0 0 30 170 Test Font0-0\r\n' +
+                    'FORM\r\n' +
+                    'PRINT\r\n';
+
+                console.log('[Test CPCL]', cpclTest);
+                UI.setStatus('Trimitere test CPCL (3 fonturi)...', 'info');
+                await sendStringToBLE(characteristic, cpclTest);
+                console.log('[Test] CPCL trimis.');
+
+                UI.setStatus('Test trimis! Verifică imprimanta.', 'success');
+            } catch (error) {
+                if (error.name === 'NotFoundError') {
+                    UI.setStatus('Conectare anulată.', 'info');
+                } else {
+                    console.error('[Test] Eroare:', error);
+                    UI.setStatus(`Eroare test: ${error.message}`, 'error');
+                }
+            }
+        };
+
+        // ============ MAIN PRINT ============
+
+        const handlePrint = async (file) => {
+            try {
+                UI.setPrintReady(false);
+                UI.setStatus('Conectare Bluetooth...', 'info');
+                UI.setProgress(0);
+
+                const device = await requestBluetoothDevice();
+                device.addEventListener('gattserverdisconnected', () => {
+                    UI.setStatus('Deconectat.', 'error');
+                    UI.setPrintReady(true);
+                });
+
+                const characteristic = await connectAndGetCharacteristic(device);
+
+                UI.setStatus('Procesare PDF...', 'info');
+                const buffer = await readFileAsArrayBuffer(file);
+                const cpclData = await renderPdfToCpcl(buffer);
+                UI.setStatus('Trimitere date...', 'info');
+                await sendStringToBLE(characteristic, cpclData);
+
+                UI.setStatus('Printare finalizată cu succes!', 'success');
+            } catch (error) {
+                if (error.name === 'NotFoundError') {
+                    UI.setStatus('Conectare anulată.', 'info');
+                } else {
+                    console.error(error);
+                    UI.setStatus(`Eroare: ${error.message}`, 'error');
+                }
+            } finally {
+                UI.setPrintReady(true);
+            }
+        };
+
+        // ============ EVENT LISTENERS ============
+
+        const setupInteractions = () => {
+            let currentFile = null;
+
+            UI.uploadArea.addEventListener('click', () => UI.fileInput.click());
+            UI.uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); UI.uploadArea.classList.add('dragover'); });
+            UI.uploadArea.addEventListener('dragleave', () => { UI.uploadArea.classList.remove('dragover'); });
+            UI.uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                UI.uploadArea.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) handleFileSelect(e.dataTransfer.files[0]);
+            });
+            UI.fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) handleFileSelect(e.target.files[0]);
+            });
+            UI.printBtn.addEventListener('click', () => { if (currentFile) handlePrint(currentFile); });
+            getElement('test-btn').addEventListener('click', handleTestPrint);
+
+            getElement('send-custom-btn').addEventListener('click', async () => {
+                const rawCmd = getElement('custom-cmd').value.trim();
+                if (!rawCmd) { UI.setStatus('Scrie o comandă ZPL sau CPCL mai întâi.', 'error'); return; }
+                try {
+                    UI.setStatus('Conectare pentru comandă personalizată...', 'info');
+                    const device = await requestBluetoothDevice();
+                    const characteristic = await connectAndGetCharacteristic(device);
+                    console.log('[Custom CMD]', rawCmd);
+                    await sendStringToBLE(characteristic, rawCmd + '\r\n');
+                    UI.setStatus('Comandă trimisă cu succes!', 'success');
+                } catch (error) {
+                    if (error.name === 'NotFoundError') { UI.setStatus('Conectare anulată.', 'info'); }
+                    else { console.error('[Custom CMD] Eroare:', error); UI.setStatus(`Eroare: ${error.message}`, 'error'); }
+                }
+            });
+
+            const handleFileSelect = (file) => {
+                if (file.type !== 'application/pdf') {
+                    UI.setStatus('Selectează un fișier PDF valid.', 'error');
+                    UI.setPrintReady(false);
+                    return;
+                }
+                currentFile = file;
+                UI.fileName.textContent = file.name;
+                UI.setPrintReady(true);
+                UI.setStatus('Fișier pregătit pentru printare.', 'info');
+            };
+        };
+
+        document.addEventListener('DOMContentLoaded', setupInteractions);
+    </script>
+</body>
+
+</html>
