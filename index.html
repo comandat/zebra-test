@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zebra ZQ521 PDF Printer - Web Bluetooth</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <!-- PDF.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <style>
         :root {
@@ -320,23 +319,19 @@
         <h1>Zebra ZQ521</h1>
         <p class="subtitle">Nativ Web Bluetooth — printare directă, 100% cloud</p>
 
-        <!-- Connection banner -->
         <div class="conn-banner" id="conn-banner">
             <div class="conn-dot" id="conn-dot"></div>
             <span id="conn-text">Deconectat.</span>
         </div>
 
-        <!-- Zebra Browser Print Connection -->
         <button class="btn btn-zinc" id="connect-zebra-btn"
             style="background: #eab308; color: black; border-color: #ca8a04; font-weight: bold;">
             🔍 Conectează Impimanta din Zebra App (Port Local)
         </button>
 
         <div id="uuid-box" class="uuid-box">
-            <!-- GATT details will appear here -->
-        </div>
+            </div>
 
-        <!-- PDF Upload -->
         <div class="upload-area" id="upload-area" style="opacity: 0.5; pointer-events: none;">
             <span class="upload-icon">📄</span>
             <span class="upload-text">Apasă sau trage un PDF aici</span>
@@ -438,18 +433,33 @@
                     }
                 }
 
+                // HACK PENTRU HONEYWELL: Forțare conexiune manuală pe baza MAC-ului
                 if (!zebraDevice) {
-                    throw new Error("Nu am putut detecta serverul Zebra. Asigură-te că aplicația 'Browser Print' rulează pe telefon/PC.");
+                    console.warn("Imprimanta nu a fost detectată automat. Se forțează conexiunea prin MAC...");
+                    
+                    // Setăm manual portul (9100 este standard pentru Android HTTP)
+                    zebraUrl = "http://127.0.0.1:9100"; 
+                    
+                    // Construim obiectul fals pentru a păcăli API-ul cu MAC-ul tău
+                    zebraDevice = {
+                        deviceType: "printer",
+                        uid: "04:EE:03:DC:20:0C", // Adresa MAC formatată corect pentru Android
+                        provider: "Zebra",
+                        name: "ZQ521_Forced",
+                        connection: "bluetooth",
+                        version: 3,
+                        manufacturer: "Zebra Technologies"
+                    };
                 }
 
-                // Am gasit o imprimantă
+                // Am gasit o imprimantă (sau am forțat una)
                 setConn(true, `Conectat: ${zebraDevice.name} (Zebra App)`);
 
-                let detectedHTML = `<b>Imprimantă preluată de pe Sistem:</b><br/>UID: ${zebraDevice.uid}<br/>Sursă: ${zebraUrl}`;
+                let detectedHTML = `<b>Imprimantă preluată:</b><br/>UID (MAC): ${zebraDevice.uid}<br/>Sursă: ${zebraUrl}`;
                 uuidBox.innerHTML = detectedHTML;
                 uuidBox.style.display = 'block';
 
-                setStatus('Imprimanta a fost preluată perfect! Poți printa.', 'ok');
+                setStatus('Imprimanta a fost preluată! Poți printa.', 'ok');
             } catch (err) {
                 console.error(err);
                 setConn(false, 'Eroare aplicație locală.');
